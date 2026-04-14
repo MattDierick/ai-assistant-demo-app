@@ -1,5 +1,7 @@
 # A short section has been added into the code in order to send the prompt to F5 AI Guardrail (API integration)
 # and check the response of the API Call. If the response is "cleared" prompt is sent to the LLM.
+# Then the response from the LLM is also sent to F5 AI Guardrail and if the response is "cleared" it is sent back to the user.
+
 
 import os
 import json
