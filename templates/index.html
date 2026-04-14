@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Assistant Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <div class="shell">
+      <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle menu">
+        <span class="hamburger-icon"></span>
+      </button>
+      <aside class="sidebar" id="sidebar">
+        <div>
+          <div class="sidebar-brand">
+            <div class="brand-logo">F5</div>
+            <h1>AI Assistant</h1>
+          </div>
+          <p class="sidebar-copy">
+            Chat with your models, and add F5 AI Security to keep your data safe.
+          </p>
+        </div>
+
+        <hr class="sidebar-divider" />
+
+        <nav class="nav">
+          <button class="nav-link active" data-view-target="assistant">
+            <span class="nav-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </span>
+            Assistant
+          </button>
+          <button class="nav-link" data-view-target="settings">
+            <span class="nav-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </span>
+            Settings
+          </button>
+        </nav>
+
+        <section class="status-card">
+          <p class="status-label">Current connection</p>
+          <p id="connection-status" class="status-value">Not configured</p>
+          <p id="connection-hint" class="status-hint">
+            Add your API URL and key in Settings to start chatting.
+          </p>
+        </section>
+      </aside>
+
+      <main class="content">
+        <section class="view active" data-view="assistant">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Workspace</p>
+              <h2>Assistant Chat</h2>
+            </div>
+          </div>
+
+          <section id="chat-thread" class="chat-thread" aria-live="polite">
+            <article class="message assistant">
+              <p class="message-role">Assistant</p>
+              <p>
+                Hello. Configure your endpoint in Settings, then send a message here.
+              </p>
+            </article>
+          </section>
+
+          <form id="chat-form" class="composer">
+            <label class="sr-only" for="message-input">Your message</label>
+            <textarea
+              id="message-input"
+              name="message"
+              rows="4"
+              placeholder="Ask something..."
+              required
+            ></textarea>
+            <div class="composer-footer">
+              <p class="composer-hint">
+                This app expects an compatible chat completions endpoint.
+              </p>
+              <button id="send-button" type="submit">Send message</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="view" data-view="settings">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Configuration</p>
+              <h2>Settings</h2>
+            </div>
+          </div>
+
+          <form id="settings-form" class="settings-form">
+            <label for="api-url">API URL</label>
+            <input
+              id="api-url"
+              name="apiUrl"
+              type="url"
+              placeholder="https://api.example.com/v1/chat/completions"
+              required
+            />
+
+            <label for="api-key">API key</label>
+            <input
+              id="api-key"
+              name="apiKey"
+              type="password"
+              placeholder="Enter your secret key"
+              required
+            />
+
+            <label for="model-name">Model name</label>
+            <input
+              id="model-name"
+              name="modelName"
+              type="text"
+              placeholder="gpt-4o-mini"
+            />
+
+            <hr style="border: none; border-top: 1px solid rgba(0,0,0,0.1); margin: 12px 0;" />
+
+            <label for="calypso-url">F5 AI Security URL</label>
+            <input
+              id="calypso-url"
+              name="calypsoUrl"
+              type="url"
+              value="https://www.us2.calypsoai.app"
+              placeholder="https://www.us2.calypsoai.app"
+            />
+
+            <label for="calypso-token">F5 AI Security Token</label>
+            <input
+              id="calypso-token"
+              name="calypsoToken"
+              type="password"
+              placeholder="Enter your F5 AI Security token"
+            />
+
+            <button type="submit">Save settings</button>
+            <p id="settings-feedback" class="settings-feedback" aria-live="polite"></p>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <footer class="demo-banner">
+      Application for demo purpose only - made by F5 GSA Security team
+    </footer>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>
