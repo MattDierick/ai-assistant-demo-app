@@ -11,11 +11,14 @@ const elements = {
   chatThread: document.querySelector("#chat-thread"),
   messageInput: document.querySelector("#message-input"),
   sendButton: document.querySelector("#send-button"),
+  clearChatButton: document.querySelector("#clear-chat-button"),
   apiUrl: document.querySelector("#api-url"),
   apiKey: document.querySelector("#api-key"),
   modelName: document.querySelector("#model-name"),
   calypsoUrl: document.querySelector("#calypso-url"),
   calypsoToken: document.querySelector("#calypso-token"),
+  calypsoEnabled: document.querySelector("#calypso-enabled"),
+  calypsoFields: document.querySelector("#calypso-fields"),
 };
 
 const state = {
@@ -34,6 +37,12 @@ async function initialize() {
 
   elements.settingsForm.addEventListener("submit", handleSettingsSave);
   elements.chatForm.addEventListener("submit", handleChatSubmit);
+  elements.clearChatButton.addEventListener("click", handleClearChat);
+
+  // Toggle F5 AI Security fields visibility
+  elements.calypsoEnabled.addEventListener("change", () => {
+    elements.calypsoFields.classList.toggle("hidden", !elements.calypsoEnabled.checked);
+  });
 
   // Load settings from server session
   await loadSettings();
@@ -51,6 +60,8 @@ async function loadSettings() {
     elements.apiKey.value = "";
     elements.apiKey.placeholder = settings.apiKey ? "Key saved on server" : "Enter your secret key";
     elements.modelName.value = settings.modelName || "gpt-4o-mini";
+    elements.calypsoEnabled.checked = Boolean(settings.calypsoEnabled);
+    elements.calypsoFields.classList.toggle("hidden", !elements.calypsoEnabled.checked);
     elements.calypsoUrl.value = settings.calypsoUrl || "";
     elements.calypsoToken.value = "";
     elements.calypsoToken.placeholder = settings.calypsoToken ? "Token saved on server" : "Enter your F5 AI Security token";
@@ -86,6 +97,7 @@ async function handleSettingsSave(event) {
   const payload = {
     apiUrl: elements.apiUrl.value.trim(),
     modelName: elements.modelName.value.trim() || "gpt-4o-mini",
+    calypsoEnabled: elements.calypsoEnabled.checked,
     calypsoUrl: elements.calypsoUrl.value.trim(),
   };
 
@@ -130,6 +142,11 @@ async function handleSettingsSave(event) {
     elements.settingsFeedback.textContent = `Network error: ${error.message}`;
     elements.settingsFeedback.className = "settings-feedback error";
   }
+}
+
+function handleClearChat() {
+  state.messages = [];
+  elements.chatThread.innerHTML = "";
 }
 
 async function handleChatSubmit(event) {

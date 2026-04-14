@@ -24,6 +24,7 @@ def get_settings():
         "apiUrl": "",
         "apiKey": "",
         "modelName": "gpt-4o-mini",
+        "calypsoEnabled": False,
         "calypsoUrl": "https://www.us2.calypsoai.app",
         "calypsoToken": "",
     })
@@ -32,6 +33,7 @@ def get_settings():
         "apiUrl": settings.get("apiUrl", ""),
         "apiKey": "••••••••" if settings.get("apiKey") else "",
         "modelName": settings.get("modelName", "gpt-4o-mini"),
+        "calypsoEnabled": settings.get("calypsoEnabled", False),
         "calypsoUrl": settings.get("calypsoUrl", ""),
         "calypsoToken": "••••••••" if settings.get("calypsoToken") else "",
     }
@@ -50,6 +52,7 @@ def save_settings():
         "apiUrl": data.get("apiUrl", "").strip(),
         "apiKey": data.get("apiKey", "").strip() or existing.get("apiKey", ""),
         "modelName": data.get("modelName", "gpt-4o-mini").strip(),
+        "calypsoEnabled": bool(data.get("calypsoEnabled", False)),
         "calypsoUrl": data.get("calypsoUrl", "").strip() or existing.get("calypsoUrl", "https://www.us2.calypsoai.app"),
         "calypsoToken": data.get("calypsoToken", "").strip() or existing.get("calypsoToken", ""),
     }
@@ -73,24 +76,28 @@ def chat():
             user_prompt = msg.get("content", "")
             break
 
-    # Scan the prompt with CalypsoAI before sending to the LLM
-    calypso_url = settings.get("calypsoUrl", "")
-    calypso_token = settings.get("calypsoToken", "")
-    if not calypso_url or not calypso_token:
-        return jsonify({"error": "F5 AI Security not configured. Add URL and token in Settings."}), 400
+    # Scan the prompt with CalypsoAI before sending to the LLM (only if enabled)
+    calypso_enabled = settings.get("calypsoEnabled", False)
+    cai = None
 
-    try:
-        cai = CalypsoAI(url=calypso_url, token=calypso_token)
-        scan_result = cai.scans.scan(user_prompt)
-        scan_data = json.loads(scan_result.model_dump_json())
-        outcome = scan_data.get("result", {}).get("outcome", "")
-        print(f"[DEBUG] prompt outcome: {outcome}")
-        if outcome != "cleared":
-            return jsonify({"content": "Blocked by F5 AI Security"})
-    except Exception as e:
-        return jsonify({"error": f"F5 AI Security scan failed: {str(e)}"}), 502
+    if calypso_enabled:
+        calypso_url = settings.get("calypsoUrl", "")
+        calypso_token = settings.get("calypsoToken", "")
+        if not calypso_url or not calypso_token:
+            return jsonify({"error": "F5 AI Security is enabled but not configured. Add URL and token in Settings."}), 400
 
-    # Send the prompt to the LLM endpoint if cleared by CalypsoAI
+        try:
+            cai = CalypsoAI(url=calypso_url, token=calypso_token)
+            scan_result = cai.scans.scan(user_prompt)
+            scan_data = json.loads(scan_result.model_dump_json())
+            outcome = scan_data.get("result", {}).get("outcome", "")
+            print(f"[DEBUG] prompt outcome: {outcome}")
+            if outcome != "cleared":
+                return jsonify({"content": "Blocked by F5 AI Security"})
+        except Exception as e:
+            return jsonify({"error": f"F5 AI Security scan failed: {str(e)}"}), 502
+
+    # Send the prompt to the LLM endpoint
     try:
         response = requests.post(
             settings["apiUrl"],
@@ -116,16 +123,17 @@ def chat():
         if not content:
             return jsonify({"error": "The API response did not contain assistant text."}), 502
 
-        # Scan the LLM response with CalypsoAI before returning to the user
-        try:
-            response_scan_result = cai.scans.scan(content.strip())
-            response_scan_data = json.loads(response_scan_result.model_dump_json())
-            response_outcome = response_scan_data.get("result", {}).get("outcome", "")
-            print(f"[DEBUG] response outcome: {response_outcome}")
-            if response_outcome != "cleared":
-                return jsonify({"content": "Response blocked by F5 AI Security"})
-        except Exception as e:
-            return jsonify({"error": f"F5 AI Security response scan failed: {str(e)}"}), 502
+        # Scan the LLM response with CalypsoAI before returning to the user (only if enabled)
+        if calypso_enabled and cai:
+            try:
+                response_scan_result = cai.scans.scan(content.strip())
+                response_scan_data = json.loads(response_scan_result.model_dump_json())
+                response_outcome = response_scan_data.get("result", {}).get("outcome", "")
+                print(f"[DEBUG] response outcome: {response_outcome}")
+                if response_outcome != "cleared":
+                    return jsonify({"content": "Response blocked by F5 AI Security"})
+            except Exception as e:
+                return jsonify({"error": f"F5 AI Security response scan failed: {str(e)}"}), 502
 
         return jsonify({"content": content.strip()})
 

@@ -88,9 +88,17 @@
             ></textarea>
             <div class="composer-footer">
               <p class="composer-hint">
-                This app expects an compatible chat completions endpoint.
+                This app expects a compatible chat completions endpoint.
               </p>
-              <button id="send-button" type="submit">Send message</button>
+              <div class="composer-actions">
+                <button id="send-button" type="submit">Send message</button>
+                <button id="clear-chat-button" type="button" aria-label="Clear chat" title="Clear chat">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
           </form>
         </section>
@@ -132,22 +140,32 @@
 
             <hr style="border: none; border-top: 1px solid rgba(0,0,0,0.1); margin: 12px 0;" />
 
-            <label for="calypso-url">F5 AI Security URL</label>
-            <input
-              id="calypso-url"
-              name="calypsoUrl"
-              type="url"
-              value="https://www.us2.calypsoai.app"
-              placeholder="https://www.us2.calypsoai.app"
-            />
+            <div class="toggle-row">
+              <label for="calypso-enabled" class="toggle-label">Enable F5 AI Security</label>
+              <label class="toggle-switch">
+                <input id="calypso-enabled" name="calypsoEnabled" type="checkbox" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
 
-            <label for="calypso-token">F5 AI Security Token</label>
-            <input
-              id="calypso-token"
-              name="calypsoToken"
-              type="password"
-              placeholder="Enter your F5 AI Security token"
-            />
+            <div id="calypso-fields" class="calypso-fields hidden">
+              <label for="calypso-url">F5 AI Security URL</label>
+              <input
+                id="calypso-url"
+                name="calypsoUrl"
+                type="url"
+                value="https://www.us2.calypsoai.app"
+                placeholder="https://www.us2.calypsoai.app"
+              />
+
+              <label for="calypso-token">F5 AI Security Token</label>
+              <input
+                id="calypso-token"
+                name="calypsoToken"
+                type="password"
+                placeholder="Enter your F5 AI Security token"
+              />
+            </div>
 
             <button type="submit">Save settings</button>
             <p id="settings-feedback" class="settings-feedback" aria-live="polite"></p>
