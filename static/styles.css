@@ -369,6 +369,98 @@ textarea {
   color: rgba(255, 255, 255, 0.7);
 }
 
+/* Rendered markdown inside assistant messages */
+.message-body {
+  line-height: 1.6;
+}
+
+.message-body p {
+  margin: 0 0 0.6em;
+}
+
+.message-body p:last-child {
+  margin-bottom: 0;
+}
+
+.message-body h1,
+.message-body h2,
+.message-body h3,
+.message-body h4 {
+  margin: 0.8em 0 0.4em;
+  line-height: 1.3;
+}
+
+.message-body h1 { font-size: 1.3em; }
+.message-body h2 { font-size: 1.15em; }
+.message-body h3 { font-size: 1.05em; }
+
+.message-body ul,
+.message-body ol {
+  margin: 0.4em 0;
+  padding-left: 1.5em;
+}
+
+.message-body li {
+  margin-bottom: 0.25em;
+}
+
+.message-body code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.88em;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.message-body pre {
+  margin: 0.6em 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #1a1d23;
+  color: #e0e0e0;
+  overflow-x: auto;
+}
+
+.message-body pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+.message-body blockquote {
+  margin: 0.6em 0;
+  padding: 4px 12px;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+}
+
+.message-body table {
+  border-collapse: collapse;
+  margin: 0.6em 0;
+  width: 100%;
+}
+
+.message-body th,
+.message-body td {
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.message-body th {
+  background: rgba(0, 0, 0, 0.04);
+  font-weight: 600;
+}
+
+.message.user .message-body code {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.message.user .message-body pre {
+  background: rgba(0, 0, 0, 0.25);
+  color: #ffffff;
+}
+
 .composer {
   margin-top: 18px;
   padding: 18px;

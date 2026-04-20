@@ -236,8 +236,14 @@ function appendMessage(message) {
   role.className = "message-role";
   role.textContent = message.role;
 
-  const body = document.createElement("p");
-  body.textContent = message.content;
+  const body = document.createElement("div");
+  body.className = "message-body";
+
+  if (message.role === "assistant" && typeof marked !== "undefined") {
+    body.innerHTML = marked.parse(message.content);
+  } else {
+    body.textContent = message.content;
+  }
 
   article.append(role, body);
   elements.chatThread.append(article);
