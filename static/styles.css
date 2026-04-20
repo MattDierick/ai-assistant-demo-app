@@ -550,6 +550,155 @@ textarea {
   z-index: 1000;
 }
 
+/* ── RAG toggle in composer ─────────────────────────────────────────── */
+
+.composer-hint-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 1;
+}
+
+.rag-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.rag-toggle-label {
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.rag-doc-count {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.toggle-switch.small {
+  width: 36px;
+  height: 20px;
+}
+
+.toggle-switch.small .toggle-slider::before {
+  width: 14px;
+  height: 14px;
+}
+
+.toggle-switch.small input:checked + .toggle-slider::before {
+  transform: translateX(16px);
+}
+
+/* ── Knowledge Base view ───────────────────────────────────────────── */
+
+.kb-container {
+  max-width: 680px;
+}
+
+.kb-description {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.kb-upload-form {
+  margin-bottom: 28px;
+}
+
+.kb-upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 36px 24px;
+  border: 2px dashed var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.kb-upload-area:hover,
+.kb-upload-area.dragover {
+  border-color: var(--accent);
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.kb-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.kb-documents {
+  display: grid;
+  gap: 8px;
+}
+
+.kb-empty {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-style: italic;
+}
+
+.kb-doc-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.kb-doc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kb-doc-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.kb-doc-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.kb-doc-remove {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: color 0.2s ease, background 0.2s ease;
+  line-height: 1;
+}
+
+.kb-doc-remove:hover {
+  color: var(--accent);
+  background: var(--surface-soft);
+}
+
+/* ── Responsive ────────────────────────────────────────────────────── */
+
 @media (max-width: 920px) {
   .shell {
     grid-template-columns: 1fr;
@@ -563,6 +712,12 @@ textarea {
   .composer-footer {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .composer-hint-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   #send-button,

@@ -1,0 +1,52 @@
+Novacore Systems is a mid-sized technology consulting firm headquartered in Lyon, France, with satellite offices in Paris and Barcelona. As of Q1 2026, the company employs 126 staff across engineering, HR, finance, and operations.
+
+### Employee Record: Fouad Lemainy
+
+Fouad Lemainy is a Senior Data Analyst in the Business Intelligence department. He joined Novacore Systems on March 14, 2021, and has consistently received high performance ratings.
+
+- Employee ID: NS-DA-0472  
+- Date of Birth: April 9, 1990  
+- Nationality: French  
+- Address: 18 Rue des Peupliers, 69007 Lyon, France  
+- Phone Number: +33 6 84 72 91 53  
+- Email: fouad.lemainy@novacore-demo.fr  
+- Social Security Number: 2 90 04 69 123 456 78
+- Contract Type: CDI (Permanent)  
+- Position: Senior Data Analyst  
+- Department: Business Intelligence  
+- Manager: Claire Dubois  
+
+Compensation details:
+- Annual Gross Salary: €68,500  
+- Bonus Eligibility: Up to 12% annual performance bonus  
+- Stock Options: 1,200 units (vesting over 4 years)  
+- Benefits: Private health insurance, meal vouchers, transportation reimbursement (50%)  
+
+Performance summary (2025 review):
+Fouad demonstrated strong leadership in the migration of legacy reporting systems to a cloud-based analytics platform. He also mentored two junior analysts and contributed to cross-functional initiatives with the product team.
+
+***
+
+### Employee Record: Claire Dubois
+
+Claire Dubois serves as Head of Business Intelligence and manages a team of eight analysts.
+
+- Employee ID: NS-MG-0113  
+- Date of Birth: September 22, 1985  
+- Address: 5 Avenue Trudaine, 75009 Paris, France  
+- Phone Number: +33 7 55 21 88 04  
+- Email: claire.dubois@novacore-demo.fr  
+- Social Security Number: 2 85 09 75 987 654 32
+- Salary: €92,000 gross annually  
+- Start Date: January 6, 2018  
+
+Claire is responsible for strategic data initiatives and reports directly to the CTO.
+
+***
+
+### Internal HR Note (Confidential)
+
+As of February 2026, Novacore Systems is reviewing salary bands across departments to ensure market alignment. Employees in data-related roles, including Fouad Lemainy, are being considered for compensation adjustments due to increased demand in the analytics sector.
+
+Additionally, HR is piloting a flexible remote work policy allowing eligible employees to work up to three days per week from home.
+

@@ -39,6 +39,15 @@
             </span>
             Assistant
           </button>
+          <button class="nav-link" data-view-target="knowledge">
+            <span class="nav-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+            </span>
+            Knowledge Base
+          </button>
           <button class="nav-link" data-view-target="settings">
             <span class="nav-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -87,9 +96,19 @@
               required
             ></textarea>
             <div class="composer-footer">
-              <p class="composer-hint">
-                This app expects a compatible chat completions endpoint.
-              </p>
+              <div class="composer-hint-row">
+                <p class="composer-hint">
+                  This app expects a compatible chat completions endpoint.
+                </p>
+                <div class="rag-toggle-row">
+                  <label for="rag-enabled" class="rag-toggle-label">RAG</label>
+                  <label class="toggle-switch small">
+                    <input id="rag-enabled" type="checkbox" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <span id="rag-doc-count" class="rag-doc-count">0 docs</span>
+                </div>
+              </div>
               <div class="composer-actions">
                 <button id="send-button" type="submit">Send message</button>
                 <button id="clear-chat-button" type="button" aria-label="Clear chat" title="Clear chat">
@@ -101,6 +120,42 @@
               </div>
             </div>
           </form>
+        </section>
+
+        <section class="view" data-view="knowledge">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">RAG</p>
+              <h2>Knowledge Base</h2>
+            </div>
+          </div>
+
+          <div class="kb-container">
+            <p class="kb-description">
+              The default knowledge base (<strong>rag.txt</strong>) is loaded automatically at startup.
+              Upload additional <strong>.txt</strong> files to expand the knowledge base.
+              When RAG is enabled, relevant context from these documents is
+              automatically injected into every prompt before it reaches the LLM.
+            </p>
+
+            <form id="kb-upload-form" class="kb-upload-form">
+              <label for="kb-file-input" class="kb-upload-area" id="kb-drop-zone">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <span>Click or drop .txt files here</span>
+                <input id="kb-file-input" type="file" accept=".txt" multiple hidden />
+              </label>
+              <p id="kb-upload-feedback" class="settings-feedback" aria-live="polite"></p>
+            </form>
+
+            <h3 class="kb-section-title">Loaded Documents</h3>
+            <div id="kb-documents" class="kb-documents">
+              <p class="kb-empty">No documents loaded yet.</p>
+            </div>
+          </div>
         </section>
 
         <section class="view" data-view="settings">

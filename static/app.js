@@ -19,6 +19,14 @@ const elements = {
   calypsoToken: document.querySelector("#calypso-token"),
   calypsoEnabled: document.querySelector("#calypso-enabled"),
   calypsoFields: document.querySelector("#calypso-fields"),
+  // RAG / Knowledge Base
+  ragEnabled: document.querySelector("#rag-enabled"),
+  ragDocCount: document.querySelector("#rag-doc-count"),
+  kbUploadForm: document.querySelector("#kb-upload-form"),
+  kbFileInput: document.querySelector("#kb-file-input"),
+  kbDropZone: document.querySelector("#kb-drop-zone"),
+  kbDocuments: document.querySelector("#kb-documents"),
+  kbUploadFeedback: document.querySelector("#kb-upload-feedback"),
 };
 
 const state = {
@@ -44,8 +52,27 @@ async function initialize() {
     elements.calypsoFields.classList.toggle("hidden", !elements.calypsoEnabled.checked);
   });
 
+  // RAG: file upload & drag-and-drop
+  elements.kbFileInput.addEventListener("change", handleKBUpload);
+  elements.kbDropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    elements.kbDropZone.classList.add("dragover");
+  });
+  elements.kbDropZone.addEventListener("dragleave", () => {
+    elements.kbDropZone.classList.remove("dragover");
+  });
+  elements.kbDropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    elements.kbDropZone.classList.remove("dragover");
+    if (e.dataTransfer.files.length) {
+      elements.kbFileInput.files = e.dataTransfer.files;
+      handleKBUpload();
+    }
+  });
+
   // Load settings from server session
   await loadSettings();
+  await loadKBDocuments();
 }
 
 function toggleSidebar() {
@@ -175,6 +202,7 @@ async function handleChatSubmit(event) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         messages: state.messages.map(({ role, content }) => ({ role, content })),
+        ragEnabled: elements.ragEnabled.checked,
       }),
     });
 
@@ -219,4 +247,97 @@ function appendMessage(message) {
 function setSending(isSending) {
   elements.sendButton.disabled = isSending;
   elements.sendButton.textContent = isSending ? "Sending..." : "Send message";
+}
+
+// ── RAG / Knowledge Base helpers ────────────────────────────────────
+
+async function loadKBDocuments() {
+  try {
+    const res = await fetch("/api/rag/documents");
+    const data = await res.json();
+    renderKBDocuments(data.documents || []);
+  } catch {
+    renderKBDocuments([]);
+  }
+}
+
+function renderKBDocuments(docs) {
+  elements.ragDocCount.textContent = `${docs.length} doc${docs.length !== 1 ? "s" : ""}`;
+
+  if (!docs.length) {
+    elements.kbDocuments.innerHTML = '<p class="kb-empty">No documents loaded yet.</p>';
+    return;
+  }
+
+  elements.kbDocuments.innerHTML = docs
+    .map(
+      (d) => `
+      <div class="kb-doc-card">
+        <div class="kb-doc-info">
+          <span class="kb-doc-name">${escapeHtml(d.name)}</span>
+          <span class="kb-doc-meta">${d.chunk_count} chunk${d.chunk_count !== 1 ? "s" : ""}</span>
+        </div>
+        <button class="kb-doc-remove" data-doc-id="${d.id}" title="Remove document">&times;</button>
+      </div>`
+    )
+    .join("");
+
+  // Attach delete handlers
+  elements.kbDocuments.querySelectorAll(".kb-doc-remove").forEach((btn) => {
+    btn.addEventListener("click", () => handleKBDelete(btn.dataset.docId));
+  });
+}
+
+async function handleKBUpload() {
+  const files = elements.kbFileInput.files;
+  if (!files || !files.length) return;
+
+  const formData = new FormData();
+  for (const f of files) {
+    formData.append("files", f);
+  }
+
+  elements.kbUploadFeedback.textContent = "Uploading & indexing...";
+  elements.kbUploadFeedback.className = "settings-feedback";
+
+  try {
+    const res = await fetch("/api/rag/upload", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      elements.kbUploadFeedback.textContent = `Uploaded ${data.uploaded.length} file(s).`;
+      elements.kbUploadFeedback.className = "settings-feedback success";
+      renderKBDocuments(data.documents || []);
+    } else {
+      elements.kbUploadFeedback.textContent = data.error || "Upload failed.";
+      elements.kbUploadFeedback.className = "settings-feedback error";
+    }
+  } catch (err) {
+    elements.kbUploadFeedback.textContent = `Upload error: ${err.message}`;
+    elements.kbUploadFeedback.className = "settings-feedback error";
+  }
+
+  // Reset the input so the same file can be re-uploaded
+  elements.kbFileInput.value = "";
+}
+
+async function handleKBDelete(docId) {
+  try {
+    const res = await fetch(`/api/rag/documents/${docId}`, { method: "DELETE" });
+    const data = await res.json();
+    if (res.ok) {
+      renderKBDocuments(data.documents || []);
+    }
+  } catch {
+    // silent
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
 }

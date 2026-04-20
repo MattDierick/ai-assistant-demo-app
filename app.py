@@ -8,9 +8,20 @@ import json
 from flask import Flask, render_template, request, jsonify, session
 import requests
 from calypsoai import CalypsoAI
+import rag_engine
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Pre-load rag.txt as the default RAG document
+DEFAULT_RAG_FILE = os.path.join(os.path.dirname(__file__), "rag.txt")
+_default_doc_id = rag_engine.load_default_document(DEFAULT_RAG_FILE)
+if _default_doc_id:
+    print(f"[INFO] Default RAG document 'rag.txt' loaded (id={_default_doc_id})")
+else:
+    print("[WARN] Default RAG document 'rag.txt' not found or already loaded.")
 
 
 @app.route("/")
@@ -59,6 +70,62 @@ def save_settings():
     return jsonify({"message": "Settings saved on the server."})
 
 
+# ── RAG Knowledge Base endpoints ──────────────────────────────────────
+
+@app.route("/api/rag/upload", methods=["POST"])
+def rag_upload():
+    """Upload one or more TXT files into the RAG knowledge base."""
+    if "files" not in request.files:
+        return jsonify({"error": "No files provided."}), 400
+
+    uploaded = []
+    for f in request.files.getlist("files"):
+        if not f.filename.lower().endswith(".txt"):
+            continue
+        text = f.read().decode("utf-8", errors="replace")
+        doc_id = rag_engine.add_document(f.filename, text)
+        # Also save file on disk so it survives quick inspection
+        f.seek(0)
+        f.save(os.path.join(UPLOAD_FOLDER, f"{doc_id}_{f.filename}"))
+        uploaded.append({"id": doc_id, "name": f.filename})
+
+    if not uploaded:
+        return jsonify({"error": "No valid .txt files found in the upload."}), 400
+
+    return jsonify({"uploaded": uploaded, "documents": rag_engine.list_documents()})
+
+
+@app.route("/api/rag/documents", methods=["GET"])
+def rag_list():
+    """List documents currently loaded in the knowledge base."""
+    return jsonify({"documents": rag_engine.list_documents()})
+
+
+@app.route("/api/rag/documents/<doc_id>", methods=["DELETE"])
+def rag_delete(doc_id):
+    """Remove a document from the knowledge base."""
+    if rag_engine.remove_document(doc_id):
+        # Also remove from disk
+        for fname in os.listdir(UPLOAD_FOLDER):
+            if fname.startswith(doc_id):
+                os.remove(os.path.join(UPLOAD_FOLDER, fname))
+        return jsonify({"message": "Document removed.", "documents": rag_engine.list_documents()})
+    return jsonify({"error": "Document not found."}), 404
+
+
+@app.route("/api/rag/search", methods=["POST"])
+def rag_search():
+    """Test retrieval – returns matching chunks for a query."""
+    data = request.get_json()
+    query = (data or {}).get("query", "")
+    if not query:
+        return jsonify({"error": "No query provided."}), 400
+    results = rag_engine.retrieve(query, top_k=5)
+    return jsonify({"results": results})
+
+
+# ── Chat endpoint ─────────────────────────────────────────────────────
+
 @app.route("/api/chat", methods=["POST"])
 def chat():
     settings = session.get("settings")
@@ -97,6 +164,20 @@ def chat():
         except Exception as e:
             return jsonify({"error": f"F5 AI Security scan failed: {str(e)}"}), 502
 
+    # ── RAG: augment the messages with relevant context ──────────────
+    rag_enabled = data.get("ragEnabled", False)
+    augmented_messages = list(data["messages"])  # shallow copy
+
+    if rag_enabled and user_prompt:
+        rag_context = rag_engine.build_rag_context(user_prompt, top_k=3)
+        if rag_context:
+            # Insert a system message with the retrieved context
+            augmented_messages.insert(0, {
+                "role": "system",
+                "content": rag_context,
+            })
+            print(f"[DEBUG] RAG context injected ({len(rag_context)} chars)")
+
     # Send the prompt to the LLM endpoint
     try:
         response = requests.post(
@@ -107,7 +188,7 @@ def chat():
             },
             json={
                 "model": settings.get("modelName", "gpt-4o-mini"),
-                "messages": data["messages"],
+                "messages": augmented_messages,
             },
             timeout=60,
         )
