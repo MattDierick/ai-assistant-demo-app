@@ -28,6 +28,9 @@ else:
 def index():
     return render_template("index.html")
 
+# ────────────────────────────────────────────────────────────────────── 
+# ── Settings endpoints to set the LLM / F5 AI Security settings ───────
+# ────────────────────────────────────────────────────────────────────── 
 
 @app.route("/api/settings", methods=["GET"])
 def get_settings():
@@ -70,7 +73,9 @@ def save_settings():
     return jsonify({"message": "Settings saved on the server."})
 
 
+# ────────────────────────────────────────────────────────────────────── 
 # ── RAG Knowledge Base endpoints ──────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────── 
 
 @app.route("/api/rag/upload", methods=["POST"])
 def rag_upload():
@@ -123,8 +128,10 @@ def rag_search():
     results = rag_engine.retrieve(query, top_k=5)
     return jsonify({"results": results})
 
-
+# ────────────────────────────────────────────────────────────────────── 
 # ── Chat endpoint ─────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────── 
+
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
@@ -143,7 +150,11 @@ def chat():
             user_prompt = msg.get("content", "")
             break
 
-    # Scan the prompt with CalypsoAI before sending to the LLM (only if enabled)
+
+    # ───────────────────────────────────────────────────────────────────────────────── 
+    # ─── Scan the prompt with CalypsoAI before sending to the LLM (only if enabled) ──
+    # ─────────────────────────────────────────────────────────────────────────────────
+
     calypso_enabled = settings.get("calypsoEnabled", False)
     cai = None
 
@@ -164,7 +175,10 @@ def chat():
         except Exception as e:
             return jsonify({"error": f"F5 AI Security scan failed: {str(e)}"}), 502
 
-    # ── RAG: augment the messages with relevant context ──────────────
+    # ─────────────────────────────────────────────────────────────────────────────
+    # ── RAG: augment the messages with relevant context (if enabled) ─────────────
+    # ─────────────────────────────────────────────────────────────────────────────
+
     rag_enabled = data.get("ragEnabled", False)
     augmented_messages = list(data["messages"])  # shallow copy
 
@@ -178,7 +192,10 @@ def chat():
             })
             print(f"[DEBUG] RAG context injected ({len(rag_context)} chars)")
 
-    # Send the prompt to the LLM endpoint
+    # ────────────────────────────────────────────────────────
+    # ────── Send the prompt to the LLM endpoint ─────────────
+    # ────────────────────────────────────────────────────────
+    
     try:
         response = requests.post(
             settings["apiUrl"],
@@ -204,7 +221,10 @@ def chat():
         if not content:
             return jsonify({"error": "The API response did not contain assistant text."}), 502
 
-        # Scan the LLM response with CalypsoAI before returning to the user (only if enabled)
+        # ───────────────────────────────────────────────────────────────────────────────────────────────────
+        # ───── Scan the LLM response with CalypsoAI before returning to the user (only if enabled) ─────────
+        # ───────────────────────────────────────────────────────────────────────────────────────────────────
+
         if calypso_enabled and cai:
             try:
                 response_scan_result = cai.scans.scan(content.strip())
