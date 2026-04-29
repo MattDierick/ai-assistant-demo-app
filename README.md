@@ -4,6 +4,8 @@ A lightweight chat application that connects to any OpenAI-compatible LLM endpoi
 
 > **⚠️ This application is for demonstration purposes only** — built by the F5 GSA Security team.
 
+![Application Screenshot](static/app-screenshot.png)
+
 ---
 
 ## Overview
