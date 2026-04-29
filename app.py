@@ -1,7 +1,11 @@
+# Author : Matthieu DIERICK (For demo purpose only, not production ready code)
+
 # A short section has been added into the code in order to send the prompt to F5 AI Guardrail (API integration)
 # and check the response of the API Call. If the response is "cleared" prompt is sent to the LLM.
 # Then the response from the LLM is also sent to F5 AI Guardrail and if the response is "cleared" it is sent back to the user.
 
+# There are 2 more python files used for the settings part and the RAG part, 
+# but the main logic is in this file. The settings.py file is used to manage the settings of the app and the rag_engine.py file is used to manage the RAG part of the app.
 
 import os
 import json
@@ -9,9 +13,11 @@ from flask import Flask, render_template, request, jsonify, session
 import requests
 from calypsoai import CalypsoAI
 import rag_engine
+from settings import settings_bp
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+app.register_blueprint(settings_bp)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -27,50 +33,6 @@ else:
 @app.route("/")
 def index():
     return render_template("index.html")
-
-# ────────────────────────────────────────────────────────────────────── 
-# ── Settings endpoints to set the LLM / F5 AI Security settings ───────
-# ────────────────────────────────────────────────────────────────────── 
-
-@app.route("/api/settings", methods=["GET"])
-def get_settings():
-    settings = session.get("settings", {
-        "apiUrl": "",
-        "apiKey": "",
-        "modelName": "gpt-4o-mini",
-        "calypsoEnabled": False,
-        "calypsoUrl": "https://www.us2.calypsoai.app",
-        "calypsoToken": "",
-    })
-    # Never send secrets back to the client
-    safe_settings = {
-        "apiUrl": settings.get("apiUrl", ""),
-        "apiKey": "••••••••" if settings.get("apiKey") else "",
-        "modelName": settings.get("modelName", "gpt-4o-mini"),
-        "calypsoEnabled": settings.get("calypsoEnabled", False),
-        "calypsoUrl": settings.get("calypsoUrl", ""),
-        "calypsoToken": "••••••••" if settings.get("calypsoToken") else "",
-    }
-    return jsonify(safe_settings)
-
-
-@app.route("/api/settings", methods=["POST"])
-def save_settings():
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "Invalid JSON"}), 400
-
-    # Preserve existing secrets if not provided in the update
-    existing = session.get("settings", {})
-    session["settings"] = {
-        "apiUrl": data.get("apiUrl", "").strip(),
-        "apiKey": data.get("apiKey", "").strip() or existing.get("apiKey", ""),
-        "modelName": data.get("modelName", "gpt-4o-mini").strip(),
-        "calypsoEnabled": bool(data.get("calypsoEnabled", False)),
-        "calypsoUrl": data.get("calypsoUrl", "").strip() or existing.get("calypsoUrl", "https://www.us2.calypsoai.app"),
-        "calypsoToken": data.get("calypsoToken", "").strip() or existing.get("calypsoToken", ""),
-    }
-    return jsonify({"message": "Settings saved on the server."})
 
 
 # ────────────────────────────────────────────────────────────────────── 
@@ -153,6 +115,7 @@ def chat():
 
     # ───────────────────────────────────────────────────────────────────────────────── 
     # ─── Scan the prompt with CalypsoAI before sending to the LLM (only if enabled) ──
+    # ─── This is where I invoke the CalypsoAI SDK ────────────────────────────────────
     # ─────────────────────────────────────────────────────────────────────────────────
 
     calypso_enabled = settings.get("calypsoEnabled", False)

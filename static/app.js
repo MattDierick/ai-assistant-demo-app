@@ -19,6 +19,9 @@ const elements = {
   calypsoToken: document.querySelector("#calypso-token"),
   calypsoEnabled: document.querySelector("#calypso-enabled"),
   calypsoFields: document.querySelector("#calypso-fields"),
+  exportSettingsButton: document.querySelector("#export-settings-button"),
+  importSettingsButton: document.querySelector("#import-settings-button"),
+  importFileInput: document.querySelector("#import-file-input"),
   // RAG / Knowledge Base
   ragEnabled: document.querySelector("#rag-enabled"),
   ragDocCount: document.querySelector("#rag-doc-count"),
@@ -44,6 +47,9 @@ async function initialize() {
   });
 
   elements.settingsForm.addEventListener("submit", handleSettingsSave);
+  elements.exportSettingsButton.addEventListener("click", handleExportSettings);
+  elements.importSettingsButton.addEventListener("click", () => elements.importFileInput.click());
+  elements.importFileInput.addEventListener("change", handleImportSettings);
   elements.chatForm.addEventListener("submit", handleChatSubmit);
   elements.clearChatButton.addEventListener("click", handleClearChat);
 
@@ -169,6 +175,75 @@ async function handleSettingsSave(event) {
     elements.settingsFeedback.textContent = `Network error: ${error.message}`;
     elements.settingsFeedback.className = "settings-feedback error";
   }
+}
+
+function handleExportSettings() {
+  // Trigger a file download by navigating to the export endpoint
+  const link = document.createElement("a");
+  link.href = "/api/settings/export";
+  link.download = "ai-assistant-config.json";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+async function handleImportSettings() {
+  const file = elements.importFileInput.files[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const llm = data.llm || {};
+    const f5 = data.f5_ai_security || {};
+    const mask = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
+
+    // Populate LLM fields
+    if (llm.apiUrl) {
+      elements.apiUrl.value = llm.apiUrl;
+    }
+    if (llm.apiKey && llm.apiKey !== mask) {
+      elements.apiKey.value = llm.apiKey;
+    }
+    if (llm.modelName) {
+      elements.modelName.value = llm.modelName;
+    }
+
+    // Populate F5 AI Security fields
+    elements.calypsoEnabled.checked = Boolean(f5.enabled);
+    elements.calypsoFields.classList.toggle("hidden", !elements.calypsoEnabled.checked);
+    if (f5.url) {
+      elements.calypsoUrl.value = f5.url;
+    }
+    if (f5.token && f5.token !== mask) {
+      elements.calypsoToken.value = f5.token;
+    }
+
+    // Also save to the server session immediately
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch("/api/settings/import", {
+      method: "POST",
+      body: formData,
+    });
+    const result = await response.json();
+
+    if (response.ok) {
+      elements.settingsFeedback.textContent = "Configuration imported — review the fields and click Save if needed.";
+      elements.settingsFeedback.className = "settings-feedback success";
+      state.configured = Boolean(elements.apiUrl.value && (elements.apiKey.value || result.hasApiKey));
+      updateConnectionStatus({ modelName: elements.modelName.value, apiUrl: elements.apiUrl.value, apiKey: "saved" });
+    } else {
+      elements.settingsFeedback.textContent = result.error || "Import failed.";
+      elements.settingsFeedback.className = "settings-feedback error";
+    }
+  } catch (error) {
+    elements.settingsFeedback.textContent = `Import error: ${error.message}`;
+    elements.settingsFeedback.className = "settings-feedback error";
+  }
+
+  // Reset so the same file can be re-imported
+  elements.importFileInput.value = "";
 }
 
 function handleClearChat() {

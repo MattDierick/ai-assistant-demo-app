@@ -540,6 +540,70 @@ textarea {
   font-weight: 700;
 }
 
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-actions button[type="submit"] {
+  flex: 1;
+}
+
+.export-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 13px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface-strong);
+  color: var(--text);
+  transition: transform 150ms ease, background-color 200ms ease, border-color 200ms ease;
+  white-space: nowrap;
+}
+
+.export-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface-soft);
+}
+
+.export-button:active {
+  transform: translateY(0);
+}
+
+.import-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 13px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface-strong);
+  color: var(--text);
+  transition: transform 150ms ease, background-color 200ms ease, border-color 200ms ease;
+  white-space: nowrap;
+}
+
+.import-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface-soft);
+}
+
+.import-button:active {
+  transform: translateY(0);
+}
+
 .settings-feedback.success {
   color: #21693e;
 }
