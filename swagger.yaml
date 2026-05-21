@@ -1,0 +1,581 @@
+openapi: 3.0.3
+info:
+  title: AI Assistant Demo App
+  description: |
+    A Flask-based AI assistant that supports chat with LLM backends, a RAG (Retrieval-Augmented Generation)
+    knowledge base, and optional F5 AI Security (CalypsoAI) scanning for both prompts and responses.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8800
+    description: Local development server
+
+tags:
+  - name: Chat
+    description: LLM chat endpoint
+  - name: RAG
+    description: RAG knowledge base management
+  - name: Settings
+    description: Application configuration management
+
+paths:
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Chat
+  # ─────────────────────────────────────────────────────────────────────────
+
+  /api/chat:
+    post:
+      tags:
+        - Chat
+      summary: Send a chat message to the configured LLM
+      description: |
+        Forwards a conversation to the configured LLM API endpoint.
+        Optionally scans the prompt and response with F5 AI Security (CalypsoAI) and/or
+        augments the conversation with RAG context retrieved from the knowledge base.
+        Requires that settings (API URL and API key) have been saved in the current session first.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              basic:
+                summary: Simple chat request
+                value:
+                  messages:
+                    - role: user
+                      content: What is the capital of France?
+                  ragEnabled: false
+              with_rag:
+                summary: Chat with RAG context
+                value:
+                  messages:
+                    - role: user
+                      content: Summarise the uploaded document.
+                  ragEnabled: true
+      responses:
+        '200':
+          description: Successful response from the LLM (or a blocked message from F5 AI Security)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              examples:
+                success:
+                  value:
+                    content: "The capital of France is Paris."
+                blocked:
+                  value:
+                    content: "Blocked by F5 AI Security"
+        '400':
+          description: Bad request – API not configured or messages missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_configured:
+                  value:
+                    error: "API not configured. Save your settings first."
+                no_messages:
+                  value:
+                    error: "No messages provided."
+        '502':
+          description: Upstream error – LLM API or F5 AI Security scan failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '504':
+          description: Gateway timeout – LLM API did not respond in time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Request to the API timed out."
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # RAG
+  # ─────────────────────────────────────────────────────────────────────────
+
+  /api/rag/upload:
+    post:
+      tags:
+        - RAG
+      summary: Upload TXT files to the knowledge base
+      description: |
+        Accepts one or more `.txt` files via multipart form data and indexes them into the
+        in-memory RAG knowledge base. Files are also persisted to the `uploads/` directory.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - files
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: One or more `.txt` files to upload
+      responses:
+        '200':
+          description: Files uploaded and indexed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagUploadResponse'
+              example:
+                uploaded:
+                  - id: "abc123"
+                    name: "document.txt"
+                documents:
+                  - id: "abc123"
+                    name: "document.txt"
+        '400':
+          description: No files provided or no valid `.txt` files found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                no_files:
+                  value:
+                    error: "No files provided."
+                no_valid_files:
+                  value:
+                    error: "No valid .txt files found in the upload."
+
+  /api/rag/documents:
+    get:
+      tags:
+        - RAG
+      summary: List documents in the knowledge base
+      description: Returns a list of all documents currently indexed in the RAG knowledge base.
+      responses:
+        '200':
+          description: List of indexed documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagDocumentsResponse'
+              example:
+                documents:
+                  - id: "abc123"
+                    name: "rag.txt"
+
+  /api/rag/documents/{doc_id}:
+    delete:
+      tags:
+        - RAG
+      summary: Remove a document from the knowledge base
+      description: |
+        Deletes the specified document from the in-memory RAG index and removes the
+        corresponding file from the `uploads/` directory.
+      parameters:
+        - in: path
+          name: doc_id
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the document to delete
+          example: "abc123"
+      responses:
+        '200':
+          description: Document removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagDeleteResponse'
+              example:
+                message: "Document removed."
+                documents: []
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Document not found."
+
+  /api/rag/search:
+    post:
+      tags:
+        - RAG
+      summary: Test retrieval against the knowledge base
+      description: Returns the top-5 matching chunks from the knowledge base for a given query string. Useful for debugging RAG retrieval quality.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RagSearchRequest'
+            example:
+              query: "What are the key features?"
+      responses:
+        '200':
+          description: Top matching chunks retrieved from the knowledge base
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagSearchResponse'
+              example:
+                results:
+                  - "Key feature 1: ..."
+                  - "Key feature 2: ..."
+        '400':
+          description: No query provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "No query provided."
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Settings
+  # ─────────────────────────────────────────────────────────────────────────
+
+  /api/settings:
+    get:
+      tags:
+        - Settings
+      summary: Retrieve current session settings
+      description: |
+        Returns the current application settings stored in the server-side session.
+        Secret values (`apiKey` and `calypsoToken`) are masked with bullet characters
+        if they have been set.
+      responses:
+        '200':
+          description: Current settings (secrets masked)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+              example:
+                apiUrl: "https://api.openai.com/v1/chat/completions"
+                apiKey: "••••••••"
+                modelName: "gpt-4o-mini"
+                calypsoEnabled: false
+                calypsoUrl: "https://www.us2.calypsoai.app"
+                calypsoToken: ""
+
+    post:
+      tags:
+        - Settings
+      summary: Save application settings
+      description: |
+        Persists LLM and F5 AI Security settings in the server-side session.
+        If `apiKey` or `calypsoToken` are omitted or empty, the previously stored values
+        are preserved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsSaveRequest'
+            example:
+              apiUrl: "https://api.openai.com/v1/chat/completions"
+              apiKey: "sk-..."
+              modelName: "gpt-4o-mini"
+              calypsoEnabled: false
+              calypsoUrl: "https://www.us2.calypsoai.app"
+              calypsoToken: ""
+      responses:
+        '200':
+          description: Settings saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Settings saved on the server."
+        '400':
+          description: Invalid or missing JSON body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Invalid JSON"
+
+  /api/settings/export:
+    get:
+      tags:
+        - Settings
+      summary: Export settings as a JSON file
+      description: |
+        Downloads the current session configuration (including unmasked secrets) as
+        `ai-assistant-config.json`. This file can later be imported via `POST /api/settings/import`.
+      responses:
+        '200':
+          description: Configuration file download
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsExport'
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              example: attachment; filename=ai-assistant-config.json
+
+  /api/settings/import:
+    post:
+      tags:
+        - Settings
+      summary: Import settings from a JSON file
+      description: |
+        Accepts a JSON configuration file (previously exported via `GET /api/settings/export`)
+        and merges it into the current session. Masked or empty secret values in the import file
+        are ignored and the existing session secrets are preserved.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: A `.json` configuration file exported by this application
+      responses:
+        '200':
+          description: Configuration imported successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsImportResponse'
+              example:
+                message: "Configuration imported successfully."
+                hasApiKey: true
+                hasToken: false
+        '400':
+          description: No file provided, wrong file type, or invalid JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                no_file:
+                  value:
+                    error: "No file provided."
+                wrong_type:
+                  value:
+                    error: "Only .json files are accepted."
+                invalid_json:
+                  value:
+                    error: "Invalid JSON file."
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Components / Schemas
+# ─────────────────────────────────────────────────────────────────────────────
+
+components:
+  schemas:
+
+    # ── Chat ─────────────────────────────────────────────────────────────────
+
+    ChatMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant]
+          description: The role of the message author
+        content:
+          type: string
+          description: The text content of the message
+
+    ChatRequest:
+      type: object
+      required:
+        - messages
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+          description: Full conversation history to send to the LLM
+        ragEnabled:
+          type: boolean
+          default: false
+          description: When true, relevant context is retrieved from the RAG knowledge base and prepended as a system message
+
+    ChatResponse:
+      type: object
+      properties:
+        content:
+          type: string
+          description: The assistant reply text, or a block message from F5 AI Security
+
+    # ── RAG ──────────────────────────────────────────────────────────────────
+
+    RagDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique document identifier
+        name:
+          type: string
+          description: Original filename of the document
+
+    RagUploadResponse:
+      type: object
+      properties:
+        uploaded:
+          type: array
+          items:
+            $ref: '#/components/schemas/RagDocument'
+          description: Documents successfully uploaded in this request
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/RagDocument'
+          description: All documents currently in the knowledge base
+
+    RagDocumentsResponse:
+      type: object
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/RagDocument'
+
+    RagDeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/RagDocument'
+          description: Remaining documents after deletion
+
+    RagSearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: The search query to run against the knowledge base
+
+    RagSearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: string
+          description: Top-5 matching text chunks from the knowledge base
+
+    # ── Settings ─────────────────────────────────────────────────────────────
+
+    SettingsResponse:
+      type: object
+      properties:
+        apiUrl:
+          type: string
+          description: LLM API endpoint URL
+        apiKey:
+          type: string
+          description: LLM API key (masked as ••••••••  if set)
+        modelName:
+          type: string
+          description: Model identifier to use for chat completions
+          default: gpt-4o-mini
+        calypsoEnabled:
+          type: boolean
+          description: Whether F5 AI Security (CalypsoAI) scanning is enabled
+        calypsoUrl:
+          type: string
+          description: CalypsoAI service URL
+        calypsoToken:
+          type: string
+          description: CalypsoAI bearer token (masked as ••••••••  if set)
+
+    SettingsSaveRequest:
+      type: object
+      properties:
+        apiUrl:
+          type: string
+          description: LLM API endpoint URL
+        apiKey:
+          type: string
+          description: LLM API key (omit or leave empty to keep existing)
+        modelName:
+          type: string
+          description: Model identifier
+          default: gpt-4o-mini
+        calypsoEnabled:
+          type: boolean
+          description: Enable or disable F5 AI Security scanning
+          default: false
+        calypsoUrl:
+          type: string
+          description: CalypsoAI service URL
+        calypsoToken:
+          type: string
+          description: CalypsoAI bearer token (omit or leave empty to keep existing)
+
+    SettingsExport:
+      type: object
+      properties:
+        llm:
+          type: object
+          properties:
+            apiUrl:
+              type: string
+            apiKey:
+              type: string
+            modelName:
+              type: string
+        f5_ai_security:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            url:
+              type: string
+            token:
+              type: string
+
+    SettingsImportResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        hasApiKey:
+          type: boolean
+          description: Whether an API key is stored after import
+        hasToken:
+          type: boolean
+          description: Whether a CalypsoAI token is stored after import
+
+    # ── Shared ───────────────────────────────────────────────────────────────
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable description of the error
