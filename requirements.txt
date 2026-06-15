@@ -1,5 +1,5 @@
 flask>=3.0
 requests>=2.31
-calypsoai
+#calypsoai from https://docs.aisecurity.f5.com/api-docs/first-steps.html#install-the-sdk
 sentence-transformers>=2.2
 faiss-cpu>=1.7

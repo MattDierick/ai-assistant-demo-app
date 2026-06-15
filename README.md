@@ -88,6 +88,34 @@ You change the port in app.py
 
 ---
 
+## Docker
+
+### Build the image
+
+```bash
+docker build -t ai-assistant-demo .
+```
+
+> The build step installs all Python dependencies and pre-downloads the `all-MiniLM-L6-v2` sentence-transformer model (~90 MB) so the container starts instantly without an extra download.
+
+### Run the container
+
+```bash
+docker run -p 8800:8800 ai-assistant-demo
+```
+
+The app is available at **http://localhost:8800** and starts automatically via **gunicorn** on container startup.
+
+### Persist uploaded documents (optional)
+
+By default, files uploaded to the RAG knowledge base are stored inside the container and lost when it stops. Mount a local directory to keep them across restarts:
+
+```bash
+docker run -p 8800:8800 -v $(pwd)/uploads:/app/uploads ai-assistant-demo
+```
+
+---
+
 ## Configuration
 
 Open the app in your browser and navigate to **Settings**:
